@@ -13,9 +13,9 @@ sub_dirs=['boxing','jack','jump','squats','walk']
 extract_path = '/Users/sandeep/Research/Ti-mmWave/data/extract/Train_Data_voxels_'
 """
 
-parent_dir = 'Path_to_training_or_test_data'
+parent_dir = '/home/argha/Documents/mmDoppler/baseline/RadHAR/Data/Train'
 sub_dirs=['boxing','jack','jump','squats','walk']
-extract_path = 'Path_to_put_extracted_data'
+extract_path = '/home/argha/Documents/mmDoppler/baseline/RadHAR/Data/process_data'
 
 
 
@@ -29,34 +29,27 @@ import time
 
 
 
-def voxalize(x_points, y_points, z_points, x, y, z, velocity):
+def voxalize(x_points, y_points, x, y):
     x_min = np.min(x)
     x_max = np.max(x)
 
     y_min = np.min(y)
     y_max = np.max(y)
 
-    z_max = np.max(z)
-    z_min = np.min(z)
-
-    z_res = (z_max - z_min)/z_points
     y_res = (y_max - y_min)/y_points
     x_res = (x_max - x_min)/x_points
 
-    pixel = np.zeros([x_points,y_points,z_points])
+    pixel = np.zeros([x_points,y_points])
 
     x_current = x_min
     y_current = y_min
-    z_current = z_min
 
     x_prev = x_min
     y_prev = y_min
-    z_prev = z_min
 
 
     x_count = 0
     y_count = 0
-    z_count = 0
     start_time = time.time()
 
 
@@ -71,18 +64,10 @@ def voxalize(x_points, y_points, z_points, x, y, z, velocity):
             y_current = y_min
             y_count = 0
             while y_current <= y_max and y_count < y_points and done==False:
-                z_prev = z_min
-                z_current = z_min
-                z_count = 0
-                while z_current <= z_max and z_count < z_points and done==False:
-                    if x[i] < x_current and y[i] < y_current and z[i] < z_current and x[i] >= x_prev and y[i] >= y_prev and z[i] >= z_prev:
-                        pixel[x_count,y_count,z_count] = pixel[x_count,y_count,z_count] + 1
-                        done = True
+                if x[i] < x_current and y[i] < y_current and x[i] >= x_prev and y[i] >= y_prev:
+                    pixel[x_count,y_count] = pixel[x_count,y_count] + 1
+                    done = True
 
-                        #velocity_voxel[x_count,y_count,z_count] = velocity_voxel[x_count,y_count,z_count] + velocity[i]
-                    z_prev = z_current
-                    z_current = z_current + z_res
-                    z_count = z_count + 1
                 y_prev = y_current
                 y_current = y_current + y_res
                 y_count = y_count + 1
@@ -135,12 +120,12 @@ def get_data(file_path):
     velocity = np.asarray(velocity)
     intensity = np.asarray(intensity)
 
-    x = x.astype(np.float)
-    y = y.astype(np.float)
-    z = z.astype(np.float)
-    velocity = velocity.astype(np.float)
-    intensity = intensity.astype(np.float)
-    frame_num = frame_num.astype(np.int)
+    x = x.astype(np.float32)
+    y = y.astype(np.float32)
+    z = z.astype(np.float32)
+    velocity = velocity.astype(np.float32)
+    intensity = intensity.astype(np.float32)
+    frame_num = frame_num.astype(np.int32)
 
 
     data = dict()
@@ -192,7 +177,7 @@ def get_data(file_path):
         z_c = f[:,2]
         vel_c=f[:,3]
 
-        pix = voxalize(10, 32, 32, x_c, y_c, z_c, vel_c)
+        pix = voxalize(10, 32, x_c, y_c)
         #print(i, f.shape,pix.shape)
         pixels.append(pix)
 
@@ -243,9 +228,9 @@ def parse_RF_files(parent_dir, sub_dirs, file_ext='*.txt'):
 
     return features, labels
 
-
-for sub_dir in sub_dirs:
-    features, labels = parse_RF_files(parent_dir,[sub_dir])
-    Data_path = extract_path + sub_dir
-    np.savez(Data_path, features,labels)
-    del features,labels
+if __name__ == "__main__":
+    for sub_dir in sub_dirs:
+        features, labels = parse_RF_files(parent_dir,[sub_dir])
+        Data_path = extract_path + sub_dir
+        np.savez(Data_path, features,labels)
+        del features,labels
